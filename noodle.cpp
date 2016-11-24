@@ -369,11 +369,17 @@ int one_connection_c::connect()
 	int rc;
 
 
+	if ((socket=::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
+		perror("Error creating udp socket");
+		return -1;
+	}
+	/*
 	if ( (socket = ::socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
 		perror("socket");
 		fprintf(stderr, "Error creating listening socket.\n");
 		socket = -1;
 	}
+	*/
 
 	struct linger nolinger; 
 	socklen_t optlen = sizeof(nolinger); 
