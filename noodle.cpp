@@ -136,6 +136,7 @@ class one_connection_c {
 	int m_id;
 	char* m_buf;
 	bool m_is_active;
+	int m_err;
 	struct sockaddr_in servaddr, sa;  /*  socket address structure  */
 	int m_server_port;
 	char m_server_address[96];
@@ -246,10 +247,13 @@ void connection_group_thread_c::main_loop()
 					if ( !conns[i].shut_down() ) 
 						m_conns_closed++;
 				}
-				if (conns_left_this_sec && !conns[i].m_is_active) { // no need to go over all of this if the per second quota is done.
+				if (conns_left_this_sec && !conns[i].m_is_active  && conns[i].m_err == 0) { // no need to go over all of this if the per second quota is done.
 					rc = conns[i].connect();
-					if ( rc != 0 ) 
+					if ( rc != 0 ) {
 						printf("Error connect!\n");
+						conns[i].m_err = rc;
+						continue;
+					}
 					conns_left_this_sec--;
 					m_conns_created++;
 
@@ -312,6 +316,7 @@ int one_connection_c::init(int id, char* server_address, int server_port, int lo
 	m_bytes_sent_this_second = 0;
 	m_created = 0; //this is initiate a connect in the manager main loop.
 	m_is_active = false;
+	m_err = 0;
 	m_yield_factor = 0;
 	strcpy(m_server_address, server_address);
 	m_server_port = server_port;
@@ -369,11 +374,17 @@ int one_connection_c::connect()
 	int rc;
 
 
+	if ((socket=::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
+		perror("Error creating udp socket");
+		return -1;
+	}
+	/*
 	if ( (socket = ::socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
 		perror("socket");
 		fprintf(stderr, "Error creating listening socket.\n");
 		socket = -1;
 	}
+	*/
 
 	struct linger nolinger; 
 	socklen_t optlen = sizeof(nolinger); 
@@ -386,7 +397,8 @@ int one_connection_c::connect()
 	rc = fcntl(socket, F_SETFL, O_NONBLOCK); 
 	rc = bind(socket, (struct sockaddr *)&sa, sizeof(sa));
 	if (rc) {
-		perror("bind");
+		printf("bind failed. skip port %d: %m\n", ntohs(sa.sin_port));
+		return -1;
 	}
 
 	if ( g_set_snd_buf ) {
@@ -523,7 +535,7 @@ class server_worker_c {
 	private:
 
 		void safe_update_all_socket_list();
-		pthread_mutex_t m_lock;
+		pthread_mutex_t m_lock = PTHREAD_MUTEX_INITIALIZER;
 		pthread_t the_thread;
 		std::list<int> all_socket;
 		std::list<int> pending_sockets;
@@ -556,7 +568,6 @@ void server_worker_c::safe_add_pending_socket(int s)
 
 void server_worker_c::init()
 {	
-	pthread_mutex_init(&m_lock, NULL);
 	m_num_conns = 0;
 	
 }
