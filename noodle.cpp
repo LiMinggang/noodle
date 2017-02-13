@@ -175,7 +175,7 @@ class connection_group_thread_c {
 
 void connection_group_thread_c::close_all()
 {
-	for ( int i = 0; i < m_load; i++ ) {
+	for ( int i = 0; i < m_conns_created; i++ ) {
 		conns[i].shut_down();
 	}
 	delete[] conns;
