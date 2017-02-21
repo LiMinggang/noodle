@@ -121,7 +121,7 @@ int pace_modify_data::init(int modify_interval, int paces_size)
 class one_connection_c {
 	friend class connection_group_thread_c;
 	public:
-	int init(int id, char* server_address, int server_port, int local_port);
+	int init(int id, char* local_address, char* server_address, int server_port, int local_port);
 	int send(int send_size);
 	int connect();
 	void zero_per_second_counters();
@@ -148,7 +148,7 @@ class one_connection_c {
 
 class connection_group_thread_c {
 	public:
-		int init(int id, int load, int send_time_out, char* server_address, int server_port, int local_port_start, 
+		int init(int id, int load, int send_time_out, char* loacl_address, char* server_address, int server_port, int local_port_start, 
 				int conns_per_second, unsigned long conn_active_time);
 		int run();
 		void* (*m_f)(void* arg);
@@ -284,7 +284,7 @@ int connection_group_thread_c::run()
 
 
 
-int connection_group_thread_c::init(int id, int load, int send_time_out, char* server_address, int server_port, int local_port_start,
+int connection_group_thread_c::init(int id, int load, int send_time_out, char* loacl_address, char* server_address, int server_port, int local_port_start,
 		int conns_per_second, unsigned long  conn_active_time)
 {
 	m_id = id;
@@ -299,7 +299,7 @@ int connection_group_thread_c::init(int id, int load, int send_time_out, char* s
 
 
 	for (int i=0; i<load; i++) {
-		conns[i].init(id*10000+i, server_address, server_port, local_port_start+i);
+		conns[i].init(id*10000+i, loacl_address, server_address, server_port, local_port_start+i);
 	}
 	return 0;
 }
@@ -309,7 +309,7 @@ void one_connection_c::zero_per_second_counters()
 	m_bytes_sent_this_second = 0;
 }
 
-int one_connection_c::init(int id, char* server_address, int server_port, int local_port)
+int one_connection_c::init(int id, char* local_address, char* server_address, int server_port, int local_port)
 {
 	m_buf = g_buf;
 	m_id = id;
@@ -329,6 +329,10 @@ int one_connection_c::init(int id, char* server_address, int server_port, int lo
 		return -1;
 	}
 	memset(&sa, 0, sizeof(sa));
+	if (local_address)
+		inet_aton(local_address, &sa.sin_addr);
+	else
+		sa.sin_addr.s_addr = INADDR_ANY;
 	sa.sin_family = AF_INET;
 	sa.sin_port = htons(local_port);
 	return 0;
@@ -811,6 +815,7 @@ void usage(char *prog)
 			"	      -v report statistics, otherwise be silent\n"
 			"	      -p port (default 10005)\n"
 			"	      -l local port bind start (default random)\n"
+			"	      -L local ip address to bind (default ANY)\n"
 			"	      -c server host address\n"
 			"	      -C concurrent connections(100000 max)\n"
 			"	      -P use Packet Pacing for throttling. otherwise software is used\n"
@@ -889,11 +894,12 @@ int main(int argc, char* argv[])
 
 	srand(time(NULL));
 
-	const char *optstring = "E:S:y:z:c:p:l:R:r:C:n:t:b:B:T:hvsPM";
+	const char *optstring = "L:E:S:y:z:c:p:l:R:r:C:n:t:b:B:T:hvsPM";
 	char c;
 
 
 	char* server_address;
+	char* local_address = NULL;
 	int server_port = 10005; 
 	int local_port_start = 10000;
 	int thread_load = 1;
@@ -929,6 +935,9 @@ int main(int argc, char* argv[])
 				break;
 			case 'l':
 				local_port_start = atoi(optarg);
+				break;
+			case 'L':
+				local_address = strdup(optarg);
 				break;
 			case 'c':
 				is_client = true;
@@ -1015,7 +1024,7 @@ int main(int argc, char* argv[])
 
 	for (int i=0; i<threads; i++) {
 		sprintf(client_ip, "%s.%d", addr_3, base_addr);
-		loader[i].init(i, conns_per_loader, 5, server_address, server_port, local_port_start+(i*conns_per_loader), total_conn_per_sec/threads, conn_active_time);
+		loader[i].init(i, conns_per_loader, 5, local_address, server_address, server_port, local_port_start+(i*conns_per_loader), total_conn_per_sec/threads, conn_active_time);
 		loader[i].run();
 	}
 
