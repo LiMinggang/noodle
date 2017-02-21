@@ -45,6 +45,7 @@ int  g_snd_buf_size;
 static bool g_print_rcv_buff = true;
 bool g_set_rcv_buf = false;
 int  g_rcv_buf_size;
+int g_last_port;
 bool is_server = false; 
 bool is_client = false; 
 char* g_buf;
@@ -396,11 +397,17 @@ int one_connection_c::connect()
 
 	rc = fcntl(socket, F_SETFL, O_NONBLOCK); 
 	rc = bind(socket, (struct sockaddr *)&sa, sizeof(sa));
-	if (rc) {
-		printf("bind failed. skip port %d: %m\n", ntohs(sa.sin_port));
-		return -1;
-	}
-
+	rc = 1;
+        while (rc != 0 ) {
+                //printf("Trying %d\n", l_port);
+                rc = bind(socket, (struct sockaddr *)&sa, sizeof(sa));
+                if (rc) {
+                        printf("bind failed on: %d errno-%d \n", ntohs(sa.sin_port), errno);
+                        perror("bind");
+                        sa.sin_port = htons(g_last_port++);
+                }
+        }
+	
 	if ( g_set_snd_buf ) {
 		rc = setsockopt( socket, SOL_SOCKET, SO_SNDBUF, (char*) &g_snd_buf_size, sizeof(g_snd_buf_size));
 		if ( rc < 0 ) {
@@ -1001,7 +1008,8 @@ int main(int argc, char* argv[])
 	char addr_3[96];
 	char *t;
 	char *p3;
-
+	g_last_port = local_port_start + total_conns;
+	
 
 
 
