@@ -400,10 +400,8 @@ int one_connection_c::connect()
 	setsockopt(socket, SOL_SOCKET, SO_LINGER, &nolinger, optlen); 
 
 	rc = fcntl(socket, F_SETFL, O_NONBLOCK); 
-	rc = bind(socket, (struct sockaddr *)&sa, sizeof(sa));
 	rc = 1;
         while (rc != 0 ) {
-                //printf("Trying %d\n", l_port);
                 rc = bind(socket, (struct sockaddr *)&sa, sizeof(sa));
                 if (rc) {
                         printf("bind failed on: %d errno-%d \n", ntohs(sa.sin_port), errno);
