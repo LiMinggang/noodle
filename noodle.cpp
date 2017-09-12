@@ -546,7 +546,7 @@ class server_worker_c {
 	private:
 
 		void safe_update_all_socket_list();
-		pthread_mutex_t m_lock = PTHREAD_MUTEX_INITIALIZER;
+		pthread_mutex_t m_lock;
 		pthread_t the_thread;
 		std::list<int> all_socket;
 		std::list<int> pending_sockets;
@@ -579,6 +579,7 @@ void server_worker_c::safe_add_pending_socket(int s)
 
 void server_worker_c::init()
 {	
+	pthread_mutex_init(&m_lock, NULL);
 	m_num_conns = 0;
 	
 }
