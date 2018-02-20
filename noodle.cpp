@@ -53,7 +53,7 @@ bool g_modify_pace = false;
 int g_yield_factor;
 unsigned long g_bandwidth_in_bytes = 100/8; //100Kbits is PP lower mark.
 bool is_PP_throttle = false;
-#define G_BUF_SIZE 32
+#define G_BUF_SIZE 16*1024
 time_t sys_start;
 int old_somaxconn = 0;
 size_t old_somaxconn_size = sizeof(old_somaxconn);
