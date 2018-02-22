@@ -1,0 +1,3 @@
+- epoll server
+- better resolution on sent msg size. 
+- examine the -b -B -z calcs
