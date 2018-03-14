@@ -9,8 +9,8 @@ connection life time \
 bandwidth per connection \
 ramp up in conns/sec \
 ip addresses and port numbers \
-Build:
 
+Build:
 g++ noodle.cpp -l pthread -o noodle
 
 Example simple run:
