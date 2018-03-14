@@ -3,12 +3,12 @@ noodle is a C10K/M network client server testing tool helping test and demonstra
 
 With noodle, you can run tens to hundreds thousands tcp/usp connections while controling:
 
-number of threads in both the client ad server
-connections per threads
-connection life time
-bandwidth per connection
-ramp up in conns/sec
-ip addresses and port numbers
+number of threads in both the client and server \
+connections per threads \
+connection life time \
+bandwidth per connection \
+ramp up in conns/sec \
+ip addresses and port numbers \
 Build:
 
 g++ noodle.cpp -l pthread -o noodle
