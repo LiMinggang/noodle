@@ -1,15 +1,14 @@
 # noodle
-noodle is an iperf-like network test - client-server tool.
+noodle is a C10K/M network client server testing tool helping test and demonstrate many sessions with relatively low effort of configuration.
 
-with noodle, unlike iperf, you can control:
+With noodle, you can run tens to hundreds thousands tcp/usp connections while controling:
 
-1. number of threads in both the client ad server
-2. connections per threads
-3. connection life time
-4. bandwidth per connection
-5. ramp up in conns/sec
-
-
+number of threads in both the client ad server
+connections per threads
+connection life time
+bandwidth per connection
+ramp up in conns/sec
+ip addresses and port numbers
 Build:
 
 g++ noodle.cpp -l pthread -o noodle
