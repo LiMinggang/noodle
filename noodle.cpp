@@ -197,7 +197,7 @@ void connection_group_thread_c::main_loop()
 	int rounds=0;
 
 
-	printf("loader_id=%d thread=%p conns_per_sec=%d bandwidth_per_conn=%lu UDP msg=%d\n", m_id, pthread_self(), m_conns_per_second, g_bandwidth_in_bytes, UDP_msg_size);
+	printf("loader_id=%d thread=%ld conns_per_sec=%d bandwidth_per_conn=%lu UDP msg=%d\n", m_id, pthread_self(), m_conns_per_second, g_bandwidth_in_bytes, UDP_msg_size);
 
 	/*
 	 * while (1)
@@ -824,8 +824,7 @@ void usage(char *prog)
 			"	      -n conn created per second\n"
 			"	      -t active time per connection in seconds. The connection will be //closed and a new connection will be created once time is up.\n"
 			"	      -T Total run time in secs, otherwise run forever or till killed \n"
-			"	      -r how many client threads. (This box has %d cores available)\n"
-			"	      -R how many server threads. (This box has %d cores available)\n"
+			"	      -r how many client/server threads. (This box has %d cores available)\n"
 			"	      -M Modify pace, currently hard-coded to 10 rates\n"
 			"	      -y yield send factor \n"
 			"	      -S snd buffer size (KB) \n"
@@ -833,7 +832,7 @@ void usage(char *prog)
 			"	      -z bandwidth per conn (bits) or \n"
 			"	      -b bandwidth per conn (kbps) or \n"
 			"	      -B total bandwidth (kbps)\n\n"
-			, prog, num_CPU(), num_CPU()
+			, prog, num_CPU()
 	      );
 	exit(0);
 }
@@ -896,7 +895,7 @@ int main(int argc, char* argv[])
 
 	srand(time(NULL));
 
-	const char *optstring = "m:L:E:S:y:z:c:p:l:R:r:C:n:t:b:B:T:hvsPMu";
+	const char *optstring = "m:L:E:S:y:z:c:p:l:r:C:n:t:b:B:T:hvsPMu";
 	char c;
 
 
@@ -931,9 +930,6 @@ int main(int argc, char* argv[])
 				break;
 			case 'r':
 				threads = atoi(optarg);
-				break;
-			case 'R':
-				server_threads = atoi(optarg);
 				break;
 			case 'n':
 				total_conn_per_sec = atoi(optarg);
@@ -1002,7 +998,7 @@ int main(int argc, char* argv[])
 	}
 
 	if ( is_server ) {
-		one_server(server_port, server_threads);
+		one_server(server_port, threads);
 	}
 
 	if ( g_modify_pace )
