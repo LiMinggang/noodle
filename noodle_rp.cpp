@@ -321,6 +321,8 @@ int one_connection_c::init(int id, char* local_address, char* server_address, in
 	m_created = 0; //this is initiate a connect in the manager main loop.
 	m_is_active = false;
 	m_is_ready = false;
+	if ( is_PP_throttle )
+		m_is_ready = true;
 	m_err = 0;
 	m_yield_factor = 0;
 	strcpy(m_server_address, server_address);
