@@ -53,6 +53,8 @@ bool g_modify_pace = false;
 int g_yield_factor;
 unsigned long g_bandwidth_in_bytes = 100/8; //100Kbits is PP lower mark.
 bool is_PP_throttle = false;
+bool is_UDP = false;
+int UDP_msg_size = 1000;
 #define G_BUF_SIZE 16*1024
 time_t sys_start;
 int old_somaxconn = 0;
@@ -195,7 +197,7 @@ void connection_group_thread_c::main_loop()
 	int rounds=0;
 
 
-	printf("loader_id=%d thread=%p conns_per_sec=%d bandwidth_per_conn=%lu\n", m_id, pthread_self(), m_conns_per_second, g_bandwidth_in_bytes);
+	printf("loader_id=%d thread=%ld conns_per_sec=%d bandwidth_per_conn=%lu UDP msg=%d\n", m_id, pthread_self(), m_conns_per_second, g_bandwidth_in_bytes, UDP_msg_size);
 
 	/*
 	 * while (1)
@@ -241,7 +243,7 @@ void connection_group_thread_c::main_loop()
 			rounds++;
 			for ( int i = 0; i < m_load; i++ ){
 				if ( conns[i].m_is_active )
-					sent_this_second += conns[i].send((G_BUF_SIZE));
+					sent_this_second += conns[i].send(is_UDP ? UDP_msg_size : (G_BUF_SIZE));
 			}
 			for ( int i = 0; i < m_load; i++ ){
 				if (TIME_TO_CLOSE(i)) {
@@ -378,11 +380,16 @@ int one_connection_c::connect()
 {
 	int rc;
 
-
-	if ( (socket = ::socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
-		perror("socket");
-		fprintf(stderr, "Error creating listening socket.\n");
-		socket = -1;
+	if ( is_UDP ) {
+		if ((socket=::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1)
+			perror("socket");
+	}
+	else {
+		if ( (socket = ::socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
+			perror("socket");
+			fprintf(stderr, "Error creating listening socket.\n");
+			socket = -1;
+		}
 	}
 
 	struct linger nolinger; 
@@ -805,6 +812,8 @@ void usage(char *prog)
 {
 	printf("Usage: %s [-s | -c host] [client(sender) options]\n where options are:\n"
 			"	      -h help screen\n"
+			"	      -u udp(client only)\n"
+			"	      -m udp msg size(default 1000)\n"
 			"	      -v report statistics, otherwise be silent\n"
 			"	      -p port (default 10005)\n"
 			"	      -l local port bind start (default random)\n"
@@ -815,8 +824,7 @@ void usage(char *prog)
 			"	      -n conn created per second\n"
 			"	      -t active time per connection in seconds. The connection will be //closed and a new connection will be created once time is up.\n"
 			"	      -T Total run time in secs, otherwise run forever or till killed \n"
-			"	      -r how many client threads. (This box has %d cores available)\n"
-			"	      -R how many server threads. (This box has %d cores available)\n"
+			"	      -r how many client/server threads. (This box has %d cores available)\n"
 			"	      -M Modify pace, currently hard-coded to 10 rates\n"
 			"	      -y yield send factor \n"
 			"	      -S snd buffer size (KB) \n"
@@ -824,7 +832,7 @@ void usage(char *prog)
 			"	      -z bandwidth per conn (bits) or \n"
 			"	      -b bandwidth per conn (kbps) or \n"
 			"	      -B total bandwidth (kbps)\n\n"
-			, prog, num_CPU(), num_CPU()
+			, prog, num_CPU()
 	      );
 	exit(0);
 }
@@ -887,7 +895,7 @@ int main(int argc, char* argv[])
 
 	srand(time(NULL));
 
-	const char *optstring = "L:E:S:y:z:c:p:l:R:r:C:n:t:b:B:T:hvsPM";
+	const char *optstring = "m:L:E:S:y:z:c:p:l:r:C:n:t:b:B:T:hvsPMu";
 	char c;
 
 
@@ -914,11 +922,14 @@ int main(int argc, char* argv[])
 			case 'P':
 				is_PP_throttle = true;
 				break;
+			case 'u':
+				is_UDP = true;
+				break;
+			case 'm':
+				UDP_msg_size = atoi(optarg);
+				break;
 			case 'r':
 				threads = atoi(optarg);
-				break;
-			case 'R':
-				server_threads = atoi(optarg);
 				break;
 			case 'n':
 				total_conn_per_sec = atoi(optarg);
@@ -987,7 +998,7 @@ int main(int argc, char* argv[])
 	}
 
 	if ( is_server ) {
-		one_server(server_port, server_threads);
+		one_server(server_port, threads);
 	}
 
 	if ( g_modify_pace )
