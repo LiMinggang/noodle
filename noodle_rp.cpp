@@ -302,7 +302,7 @@ int connection_group_thread_c::init(int id, int load, int send_time_out, char* l
 
 
 	for (int i=0; i<load; i++) {
-		conns[i].init(id*10000+i, loacl_address, server_address, server_port, local_port_start+i);
+		conns[i].init(id*10000+i, loacl_address, server_address, server_port+i, local_port_start+i);
 	}
 	return 0;
 }
@@ -378,7 +378,6 @@ int one_connection_c::send(int s_size)
 		int rv;
  		rv = read(socket, b, 2);
 		if ( rv > 0 ) {
-			printf("rv=%d\n", rv);
 			m_is_ready = true;
 		}
 		return 0;
@@ -1040,7 +1039,7 @@ int main(int argc, char* argv[])
 
 	for (int i=0; i<threads; i++) {
 		sprintf(client_ip, "%s.%d", addr_3, base_addr);
-		loader[i].init(i, conns_per_loader, 5, local_address, server_address, server_port, local_port_start+(i*conns_per_loader), total_conn_per_sec/threads, conn_active_time);
+		loader[i].init(i, conns_per_loader, 5, local_address, server_address, server_port+(i*conns_per_loader), local_port_start+(i*conns_per_loader), total_conn_per_sec/threads, conn_active_time);
 		loader[i].run();
 	}
 
